@@ -9,7 +9,7 @@ import math
 import time
 
 
-FAN_MAC = '58:2b:db:00:2e:68'.lower()
+FAN_MAC = binascii.unhexlify('582bdb002e68')
 FAN_PIN = '09135336'
 FAN_MAX_RPM = 2400
 
@@ -51,8 +51,6 @@ sensor_last_seen = 0
 fan_illuminance = None
 fan_desired_boost = False
 fan_last_seen = 0
-
-# FIXME: need to check things are alive somehow?
 
 
 async def write_service_characteristic(bt_service, uuid: bluetooth.UUID, data: bytes):
@@ -119,7 +117,7 @@ async def fan():
             device = aioble.Device(0, FAN_MAC)  # 0 => ADDR_PUBLIC
             connection = await device.connect(0)
             async with connection:
-                print("FANCONNECTED")
+                print("fan connected")
 
                 # get essential services and configure the fan
                 fan_details_service = await connection.service(SERVICE_FAN_DETAILS, timeout_ms=5000)
@@ -134,7 +132,7 @@ async def fan():
                     humidity, temp, light, speed, trigger = await(get_fan_state(fan_status_service_sensor_data_characteristic))
                     boost_on, boost_speed, boost_secs = await(get_fan_boost(fan_settings_service_boost_characteristic))
 
-                    print("fan", humidity, temp, light, speed, trigger, boost_on, boost_speed, boost_secs, fan_desired_boost)
+                    print("fan data", humidity, temp, light, speed, trigger, boost_on, boost_speed, boost_secs, fan_desired_boost)
 
                     if fan_desired_boost != boost_on:
                         await set_fan_boost(fan_settings_service_boost_characteristic, fan_desired_boost)
@@ -209,7 +207,7 @@ async def sensor():
                             sensor_battery = battery
                         sensor_last_seen = time.ticks_ms()
 
-                        print("sensor", temp, humidity, battery)
+                        print("sensor data", temp, humidity, battery)
 
             await asyncio.sleep(1)
         except Exception as ex:
@@ -246,23 +244,12 @@ async def mqtt():
     # await mqc.subscribe(topic, qos)
 
 
-# if __name__ == "__main__":
-#     ble = bluetooth.BLE()
-#     ble.active('active')
-#     ble.irq(bt_irq)
-#     ble.gaqqp_scan(2000, 100)
-#     time.sleep(2)
-#     # ble.active('active')
-#     # with ble.gap_scan(30000, 50000, 50000) as scanner:
-#     #     for adv in scanner:cd de
-#     #         print(adv)
-
 async def main():
-    await asyncio.gather(
-                         fan(),
-                         sensor(),
-                        #  mqtt()
-                         )
+    what = [
+        fan(),
+        sensor(),
+        # mqtt()
+    ]
+    await asyncio.gather(*what)
 
 asyncio.run(main())
-print("HING")
