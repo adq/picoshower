@@ -273,6 +273,7 @@ async def mqtt():
 
     mqc = mqtt_async.MQTTClient(mqtt_async.config)
     await mqc.connect()
+    print("MQTT connected")
 
     await mqc.subscribe([('homeassistant/fan/fanShower/command', 0), ('homeassistant/fan/fanShower/pccommand', 0)])
 
@@ -306,7 +307,7 @@ async def main():
     what = [
         fan(),
         sensor(),
-        # mqtt()
+        mqtt()
     ]
     await asyncio.gather(*what)
 
