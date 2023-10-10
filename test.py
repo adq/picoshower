@@ -125,7 +125,7 @@ async def fan():
             # await asyncio.sleep(5)
 
 
-def decode_sensor_packet(pkt):
+def decode_bthome_data(pkt):
     temp = humidity = battery = None
 
     i = 0
@@ -160,12 +160,13 @@ async def sensor():
                     if result.device.addr == SENSOR_MAC:
                         print("SENSOR", result, result.name(), result.rssi, result.adv_data, result.resp_data)
                         if result.adv_data is not None:
-                            for i in range(len(result.adv_data)):
+                            i = 0 
+                            while i < len(result.adv_data):
                                 length = result.adv_data[i]
                                 type = result.adv_data[i+1]
 
                                 if type == 0x16:
-                                    decode_sensor_packet(result.adv_data[i+2, length - 1])
+                                    decode_bthome_data(result.adv_data[i+2:])
                                     break
 
                                 i += length + 1
