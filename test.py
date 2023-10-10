@@ -100,7 +100,7 @@ async def get_fan_boost(fan_settings_service_boost_characteristic):
     speed = (rpm / FAN_MAX_RPM) * 100
     speed = round(min(speed, 100), 2)
 
-    return on, speed, secs
+    return True if on else False, speed, secs
 
 
 async def set_fan_boost(fan_settings_service_boost_characteristic, on):
