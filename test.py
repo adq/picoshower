@@ -151,6 +151,23 @@ def decode_bthome_data(pkt):
     return temp, humidity, battery
 
 
+def extract_bthome_data(adv_data):
+    if adv_data is None:
+        return None, None, None
+    
+    i = 0 
+    while i < len(adv_data):
+        length = adv_data[i+0]
+        type = adv_data[i+1]
+
+        if type == 0x16 and adv_data[i+2] == 0x1c and adv_data[i+3] == 0x18:
+            return decode_bthome_data(adv_data[i+4:])
+
+        i += length + 1  
+    
+    return None, None, None
+
+
 async def sensor():
     while True:
         try:
@@ -159,17 +176,7 @@ async def sensor():
                     print(result, binascii.hexlify(result.device.addr, ':'), SENSOR_MAC)
                     if result.device.addr == SENSOR_MAC:
                         print("SENSOR", result, result.name(), result.rssi, result.adv_data, result.resp_data)
-                        if result.adv_data is not None:
-                            i = 0 
-                            while i < len(result.adv_data):
-                                length = result.adv_data[i+0]
-                                type = result.adv_data[i+1]
-
-                                if type == 0x16 and result.adv_data[i+2] == 0x1c and result.adv_data[i+3] == 0x18:
-                                    print(decode_bthome_data(result.adv_data[i+4:]))
-                                    break
-
-                                i += length + 1
+                        print(extract_bthome_data(result.adv_data))
 
             await asyncio.sleep(5)
         except Exception as ex:
