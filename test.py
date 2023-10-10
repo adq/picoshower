@@ -162,10 +162,10 @@ async def sensor():
                         if result.adv_data is not None:
                             i = 0 
                             while i < len(result.adv_data):
-                                length = result.adv_data[i]
+                                length = result.adv_data[i+0]
                                 type = result.adv_data[i+1]
 
-                                if type == 0x16 and result.adv_data[i+3] == 0x1c and result.adv_data[i+4] == 0x18:
+                                if type == 0x16 and result.adv_data[i+2] == 0x1c and result.adv_data[i+3] == 0x18:
                                     print(decode_bthome_data(result.adv_data[i+4:]))
                                     break
 
