@@ -134,6 +134,8 @@ async def fan():
                     humidity, temp, light, speed, trigger = await(get_fan_state(fan_status_service_sensor_data_characteristic))
                     boost_on, boost_speed, boost_secs = await(get_fan_boost(fan_settings_service_boost_characteristic))
 
+                    print("fan", humidity, temp, light, speed, trigger, boost_on, boost_speed, boost_secs, fan_desired_boost)
+
                     if fan_desired_boost != boost_on:
                         await set_fan_boost(fan_settings_service_boost_characteristic, fan_desired_boost)
 
@@ -206,6 +208,8 @@ async def sensor():
                         if battery is not None:
                             sensor_battery = battery
                         sensor_last_seen = time.ticks_ms()
+
+                        print("sensor", temp, humidity, battery)
 
             await asyncio.sleep(1)
         except Exception as ex:
