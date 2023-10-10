@@ -165,8 +165,8 @@ async def sensor():
                                 length = result.adv_data[i]
                                 type = result.adv_data[i+1]
 
-                                if type == 0x16:
-                                    decode_bthome_data(result.adv_data[i+2:])
+                                if type == 0x16 and result.adv_data[i+3] == 0x1c and result.adv_data[i+4] == 0x18:
+                                    print(decode_bthome_data(result.adv_data[i+4:]))
                                     break
 
                                 i += length + 1
