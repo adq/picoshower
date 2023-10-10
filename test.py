@@ -105,13 +105,15 @@ async def fan():
                 fan_settings_service = await connection.service(SERVICE_FAN_SETTINGS)
                 await configure_fan(fan_status_service, fan_settings_service)
 
-                fan_status_service_sensor_data_characteristic =  await fan_status_service.characteristic(CHARACTERISTIC_SENSOR_DATA)
-                fan_settings_service_boot_characteristic =  await fan_settings_service.characteristic(CHARACTERISTIC_BOOST)
+                fan_status_service_sensor_data_characteristic = await fan_status_service.characteristic(CHARACTERISTIC_SENSOR_DATA)
+                fan_settings_service_boost_characteristic = await fan_settings_service.characteristic(CHARACTERISTIC_BOOST)
+                print(fan_status_service_sensor_data_characteristic)
+                print(fan_settings_service_boost_characteristic)
 
                 while True:
                     print(await(get_fan_state(fan_status_service_sensor_data_characteristic)))
-                    print(await(get_fan_boost(fan_settings_service_boot_characteristic)))
-                    await asyncio.sleep(5)
+                    print(await(get_fan_boost(fan_settings_service_boost_characteristic)))
+                    await async io.sleep(5)
 
         except Exception as ex:
             print("FANFAIL")
