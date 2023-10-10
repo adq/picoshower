@@ -5,7 +5,7 @@ import mqtt_async
 import binascii
 import bluetooth
 import struct
-
+import math
 
 
 FAN_MAC = '58:2b:db:00:2e:68'.lower()
@@ -41,42 +41,83 @@ CHARACTERISTIC_TEMP_HEAT_DISTRIBUTOR = bluetooth.UUID("a22eae12-dba8-49f3-9c69-1
 CHARACTERISTIC_TIME_FUNCTIONS = bluetooth.UUID("49c616de-02b1-4b67-b237-90f66793a6f2")
 
 
+async def write_service_characteristic(bt_service, uuid: bluetooth.UUID, data: bytes):
+    bt_characteristic = await bt_service.characteristic(uuid)
+    await bt_characteristic.write(data)
+
+async def read_service_characteristic(bt_service, uuid: bluetooth.UUID, data: bytes):
+    bt_characteristic = await bt_service.characteristic(uuid)
+    await bt_characteristic.write(data)
+
+
+async def configure_fan(fan_status_service, fan_settings_service):
+    await write_service_characteristic(fan_status_service, CHARACTERISTIC_PIN_CODE, struct.pack("<I", int(FAN_PIN)))
+
+    await write_service_characteristic(fan_settings_service, CHARACTERISTIC_LEVEL_OF_FAN_SPEED, struct.pack("<HHH", 2100, 1675, 1000))
+    await write_service_characteristic(fan_settings_service, CHARACTERISTIC_SENSITIVITY, struct.pack("<4B", 1, 3, 1, 3))
+    await write_service_characteristic(fan_settings_service, CHARACTERISTIC_TIME_FUNCTIONS, struct.pack("<2B", 0, 15))
+    await write_service_characteristic(fan_settings_service, CHARACTERISTIC_AUTOMATIC_CYCLES, struct.pack("<B", 2))
+    await write_service_characteristic(fan_settings_service, CHARACTERISTIC_NIGHT_MODE, struct.pack("<5B", 0, 23, 0, 6, 0))
+    await write_service_characteristic(fan_settings_service, CHARACTERISTIC_BASIC_VENTILATION, struct.pack("<2B", 1, 1))
+    await write_service_characteristic(fan_settings_service, CHARACTERISTIC_TEMP_HEAT_DISTRIBUTOR, struct.pack("<BHH", 25, 0, 2100))
+
+
+async def get_fan_state(fan_status_service_sensor_data_characteristic):
+    v = struct.unpack('<4HBHB', await fan_status_service_sensor_data_characteristic.read())
+    humidity = round(math.log2(v[0])*10, 2) if v[0] > 0 else 0
+    temp = v[1] / 4
+    light = v[2]
+    rpm = v[3]
+    trigger = "No trigger"
+    if ((v[4] >> 4) & 1) == 1:
+        trigger = "Boost"
+    elif (v[4] & 3) == 1:
+        trigger = "Trickle ventilation"
+    elif (v[4] & 3) == 2:
+        trigger = "Light ventilation"
+    elif (v[4] & 3) == 3:  # Note that the trigger might be active, but mode must be enabled to be activated
+        trigger = "Humidity ventilation"
+
+    speed = (rpm / FAN_MAX_RPM) * 100
+    speed = round(min(speed, 100), 2)
+
+    return humidity, temp, light, speed, trigger
+
+
+async def get_fan_boost(fan_settings_service_boot_characteristic):
+    on, rpm, secs = struct.unpack('<BHH', await fan_settings_service_boot_characteristic.read()) 
+
+    speed = (rpm / FAN_MAX_RPM) * 100
+    speed = round(min(speed, 100), 2)
+
+    return on, speed, secs
+
+
 async def fan():
     while True:
         try:
-            print("MOOOO")
             device = aioble.Device(0, FAN_MAC)  # 0 => ADDR_PUBLIC
             connection = await device.connect(0)
             async with connection:
+                print("FANCONNECTED")
+
                 fan_status_service = await connection.service(SERVICE_FAN_STATUS)
                 fan_settings_service = await connection.service(SERVICE_FAN_SETTINGS)
-                
-                fan_status_service_pin = await fan_status_service.characteristic(CHARACTERISTIC_PIN_CODE)
-                await fan_status_service_pin.write(struct.pack("<I", int(FAN_PIN)))
+                await configure_fan(fan_status_service, fan_settings_service)
 
-                for service in connection.services():
-                    print(service)
+                fan_status_service_sensor_data_characteristic =  await fan_status_service.characteristic(CHARACTERISTIC_SENSOR_DATA)
+                fan_settings_service_boot_characteristic =  await fan_settings_service.characteristic(CHARACTERISTIC_BOOST)
+
                 while True:
-                    print("FANCONNECTED")
-
-                    await asyncio.sleep(1)
+                    print(await(get_fan_state(fan_status_service_sensor_data_characteristic)))
+                    print(await(get_fan_boost(fan_settings_service_boot_characteristic)))
+                    await asyncio.sleep(5)
+                    
         except Exception as ex:
             print("FANFAIL")
             print(type(ex))
             print(ex)
             await asyncio.sleep(5)
-
-        # try:
-        #     temp_service = await connection.service(_ENV_SENSE_UUID)
-        #     temp_characteristic = await temp_service.characteristic(_ENV_SENSE_TEMP_UUID)
-        # except asyncio.TimeoutError:
-        #     print("Timeout discovering services/characteristics")
-        #     return
-
-        # while True:
-        #     temp_deg_c = _decode_temperature(await temp_characteristic.read())
-        #     print("Temperature: {:.2f}".format(temp_deg_c))
-        #     await asyncio.sleep_ms(1000)
 
 
 async def sensor():
