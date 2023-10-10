@@ -160,7 +160,15 @@ async def sensor():
                     if result.device.addr == SENSOR_MAC:
                         print("SENSOR", result, result.name(), result.rssi, result.adv_data, result.resp_data)
                         if result.adv_data is not None:
-                            print(decode_sensor_packet(result.adv_data))
+                            for i in range(len(result.adv_data)):
+                                length = result.adv_data[i]
+                                type = result.adv_data[i+1]
+
+                                if type == 0x16:
+                                    decode_sensor_packet(result.adv_data[i+2, length - 1])
+                                    break
+
+                                i += length + 1
 
             await asyncio.sleep(5)
         except Exception as ex:
