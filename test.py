@@ -112,12 +112,13 @@ async def fan():
                     print(await(get_fan_state(fan_status_service_sensor_data_characteristic)))
                     print(await(get_fan_boost(fan_settings_service_boot_characteristic)))
                     await asyncio.sleep(5)
-                    
+
         except Exception as ex:
             print("FANFAIL")
             print(type(ex))
             print(ex)
-            await asyncio.sleep(5)
+            raise
+            # await asyncio.sleep(5)
 
 
 async def sensor():
