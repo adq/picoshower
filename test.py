@@ -289,16 +289,16 @@ async def mqtt():
         # sensor data
         if (time.ticks_ms() - sensor_last_seen) < 10000:
             if sensor_humidity is not None:
-                await mqc.publish("homeassistant/sensor/sensorShowerH/state", round(sensor_humidity, 2))
+                await mqc.publish("homeassistant/sensor/sensorShowerH/state", str(round(sensor_humidity, 2)))
             if sensor_temperature is not None:
-                await mqc.publish("homeassistant/sensor/sensorShowerT/state", round(sensor_temperature, 2))
+                await mqc.publish("homeassistant/sensor/sensorShowerT/state", str(round(sensor_temperature, 2)))
             if sensor_battery is not None:
-                await mqc.publish("homeassistant/sensor/sensorShowerB/state", round(sensor_battery, 2))
+                await mqc.publish("homeassistant/sensor/sensorShowerB/state", str(round(sensor_battery, 2)))
 
         # fan data
         if (time.ticks_ms() - fan_last_seen) < 10000:
             if fan_illuminance is not None:
-                await mqc.publish("homeassistant/sensor/sensorShowerL/state", round(fan_illuminance))
+                await mqc.publish("homeassistant/sensor/sensorShowerL/state", str(round(fan_illuminance)))
             await mqc.publish("homeassistant/fan/fanShower/state", 'ON' if fan_desired_boost else 'OFF')
 
         await asyncio.sleep(5)
