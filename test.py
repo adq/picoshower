@@ -18,10 +18,12 @@ MQTT_STATE_TOPIC = 'homeassistant/sensor/picopower/state'
 MQTT_CONFIG_TOPIC = 'homeassistant/sensor/picopower/config'
 MQTT_CLIENT_ID = 'picoshower'
 
-SERVICE_FAN_STATUS = bluetooth.UUID("e6834e4b-7b3a-48e6-91e4-f1d005f564d3")
+SERVICE_FAN_DETAILS = bluetooth.UUID("e6834e4b-7b3a-48e6-91e4-f1d005f564d3")
 CHARACTERISTIC_PIN_CODE = bluetooth.UUID("4cad343a-209a-40b7-b911-4d9b3df569b2")
 CHARACTERISTIC_PIN_CONFIRMATION = bluetooth.UUID("d1ae6b70-ee12-4f6d-b166-d2063dcaffe1")
 CHARACTERISTIC_FAN_DESCRIPTION = bluetooth.UUID("b85fa07a-9382-4838-871c-81d045dcc2ff")
+
+SERVICE_FAN_STATUS = bluetooth.UUID("1a46a853-e5ed-4696-bac0-70e346884a26")
 CHARACTERISTIC_SENSOR_DATA = bluetooth.UUID("528b80e8-c47a-4c0a-bdf1-916a7748f412")
 CHARACTERISTIC_STATUS = bluetooth.UUID("25a824ad-3021-4de9-9f2f-60cf8d17bded")
 
@@ -50,8 +52,8 @@ async def read_service_characteristic(bt_service, uuid: bluetooth.UUID, data: by
     await bt_characteristic.write(data)
 
 
-async def configure_fan(fan_status_service, fan_settings_service):
-    await write_service_characteristic(fan_status_service, CHARACTERISTIC_PIN_CODE, struct.pack("<I", int(FAN_PIN)))
+async def configure_fan(fan_details_service, fan_settings_service):
+    await write_service_characteristic(fan_details_service, CHARACTERISTIC_PIN_CODE, struct.pack("<I", int(FAN_PIN)))
 
     await write_service_characteristic(fan_settings_service, CHARACTERISTIC_LEVEL_OF_FAN_SPEED, struct.pack("<HHH", 2100, 1675, 1000))
     await write_service_characteristic(fan_settings_service, CHARACTERISTIC_SENSITIVITY, struct.pack("<4B", 1, 3, 1, 3))
@@ -101,14 +103,13 @@ async def fan():
             async with connection:
                 print("FANCONNECTED")
 
-                fan_status_service = await connection.service(SERVICE_FAN_STATUS)
-                fan_settings_service = await connection.service(SERVICE_FAN_SETTINGS)
-                await configure_fan(fan_status_service, fan_settings_service)
+                fan_details_service = await connection.service(SERVICE_FAN_DETAILS, timeout_ms=5000)
+                fan_status_service = await connection.service(SERVICE_FAN_STATUS, timeout_ms=5000)
+                fan_settings_service = await connection.service(SERVICE_FAN_SETTINGS, timeout_ms=5000)
+                await configure_fan(fan_details_service, fan_settings_service)
 
-                fan_status_service_sensor_data_characteristic = await fan_status_service.characteristic(CHARACTERISTIC_SENSOR_DATA)
-                fan_settings_service_boost_characteristic = await fan_settings_service.characteristic(CHARACTERISTIC_BOOST)
-                print(fan_status_service_sensor_data_characteristic)
-                print(fan_settings_service_boost_characteristic)
+                fan_status_service_sensor_data_characteristic = await fan_status_service.characteristic(CHARACTERISTIC_SENSOR_DATA, timeout_ms=5000)
+                fan_settings_service_boost_characteristic = await fan_settings_service.characteristic(CHARACTERISTIC_BOOST, timeout_ms=5000)
 
                 while True:
                     print(await(get_fan_state(fan_status_service_sensor_data_characteristic)))
