@@ -275,7 +275,8 @@ async def mqtt():
     await mqc.connect()
     print("MQTT connected")
 
-    await mqc.subscribe([('homeassistant/fan/fanShower/command', 0), ('homeassistant/fan/fanShower/pccommand', 0)])
+    await mqc.subscribe('homeassistant/fan/fanShower/command', 0)
+    await mqc.subscribe('homeassistant/fan/fanShower/pccommand', 0)
 
     while True:
         # publish all the config jsons
