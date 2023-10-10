@@ -103,14 +103,15 @@ async def fan():
             async with connection:
                 print("FANCONNECTED")
 
+                # get essential services and configure the fan
                 fan_details_service = await connection.service(SERVICE_FAN_DETAILS, timeout_ms=5000)
                 fan_status_service = await connection.service(SERVICE_FAN_STATUS, timeout_ms=5000)
                 fan_settings_service = await connection.service(SERVICE_FAN_SETTINGS, timeout_ms=5000)
                 await configure_fan(fan_details_service, fan_settings_service)
 
+                # get essential characteristics and enter monitoring loop
                 fan_status_service_sensor_data_characteristic = await fan_status_service.characteristic(CHARACTERISTIC_SENSOR_DATA, timeout_ms=5000)
                 fan_settings_service_boost_characteristic = await fan_settings_service.characteristic(CHARACTERISTIC_BOOST, timeout_ms=5000)
-
                 while True:
                     print(await(get_fan_state(fan_status_service_sensor_data_characteristic)))
                     print(await(get_fan_boost(fan_settings_service_boost_characteristic)))
@@ -124,20 +125,46 @@ async def fan():
             # await asyncio.sleep(5)
 
 
+def decode_sensor_packet(pkt):
+    temp = humidity = battery = None
+
+    i = 0
+    while i < len(pkt):
+        length = pkt[i] & 0x1f
+        _ = pkt[i] >> 5
+        type = pkt[i+1]
+
+        if type == 2:
+            if length == 3:
+                temp = ((pkt[i+3] << 8) | pkt[i+2]) * 0.01
+
+        elif type == 3:
+            if length == 3:
+                humidity = ((pkt[i+3] << 8) | pkt[i+2]) * 0.01
+
+        elif type == 1:
+            if length == 2:
+                battery = pkt[i+2]
+
+        i += 1 + length
+
+    return temp, humidity, battery
+
+
 async def sensor():
     while True:
         try:
-            print("SCANNER")
             async with aioble.scan(duration_ms=0, interval_us=30000, window_us=30000, active=True) as scanner:
                 async for result in scanner:
-                    print("HEY", binascii.hexlify(result.device.addr, ':'))
-                    if result.device.addr == SENSOR_MAC:
+                    if binascii.hexlify(result.device.addr, ':') == SENSOR_MAC:
                         print("SENSOR", result, result.name(), result.rssi, list(result.services()))
-            await asyncio.sleep(1)
+
+            await asyncio.sleep(5)
         except Exception as ex:
             print("SENSORFAIL")
             print(ex)
-            await asyncio.sleep(5)
+            raise
+            # await asyncio.sleep(5)
 
 
 def msg_callback(topic, msg, retained, qos):
@@ -192,7 +219,7 @@ async def main():
     # print("Connected to WiFi")
 
     await asyncio.gather(
-        fan(),
+        # fan(),
                          sensor(),
                         #  mqtt()
                          )
