@@ -158,10 +158,9 @@ def extract_bthome_data(adv_data):
     i = 0 
     while i < len(adv_data):
         length = adv_data[i+0]
-        type = adv_data[i+1]
 
-        if type == 0x16 and adv_data[i+2] == 0x1c and adv_data[i+3] == 0x18:
-            return decode_bthome_data(adv_data[i+4:])
+        if adv_data[i+1] == 0x16 and adv_data[i+2] == 0x1c and adv_data[i+3] == 0x18:
+            return decode_bthome_data(adv_data[i+4:i+length+1])
 
         i += length + 1  
     
