@@ -83,7 +83,7 @@ async def sensor():
     while True:
         try:
             print("SCANNER")
-            async with aioble.scan(0) as scanner:
+            async with aioble.scan(duration_ms=0, interval_us=30000, window_us=30000, active=True) as scanner:
                 async for result in scanner:
                     print("HEY", binascii.hexlify(result.device.addr, ':'))
                     if result.device.addr == SENSOR_MAC:
@@ -147,7 +147,7 @@ async def main():
     # print("Connected to WiFi")
 
     await asyncio.gather(
-        # fan(),mlknm;,
+        fan(),
                          sensor(),
                         #  mqtt()
                          )
