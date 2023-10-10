@@ -28,7 +28,7 @@ CHARACTERISTIC_STATUS = bluetooth.UUID("25a824ad-3021-4de9-9f2f-60cf8d17bded")
 SERVICE_FAN_SETTINGS = bluetooth.UUID("c119e858-0531-4681-9674-5a11f0e53bb4")
 CHARACTERISTIC_AUTOMATIC_CYCLES = bluetooth.UUID("f508408a-508b-41c6-aa57-61d1fd0d5c39")
 CHARACTERISTIC_BASIC_VENTILATION = bluetooth.UUID("faa49e09-a79c-4725-b197-bdc57c67dc32")
-CHARACTERISTIC_BOOST = bluetooth.UUID("118c949c-28c8-4139-b0b3-bluetooth.UUID(36657fd055a9")
+CHARACTERISTIC_BOOST = bluetooth.UUID("118c949c-28c8-4139-b0b3-36657fd055a9")
 CHARACTERISTIC_CLOCK = bluetooth.UUID("6dec478e-ae0b-4186-9d82-13dda03c0682")
 CHARACTERISTIC_FACTORY_SETTINGS_CHANGED = bluetooth.UUID("63b04af9-24c0-4e5d-a69c-94eb9c5707b4")
 CHARACTERISTIC_LED = bluetooth.UUID("8b850c04-dc18-44d2-9501-7662d65ba36e")
@@ -40,16 +40,6 @@ CHARACTERISTIC_SENSITIVITY = bluetooth.UUID("e782e131-6ce1-4191-a8db-f4304d7610f
 CHARACTERISTIC_TEMP_HEAT_DISTRIBUTOR = bluetooth.UUID("a22eae12-dba8-49f3-9c69-1721dcff1d96")
 CHARACTERISTIC_TIME_FUNCTIONS = bluetooth.UUID("49c616de-02b1-4b67-b237-90f66793a6f2")
 
-
-# _IRQ_SCAN_RESULT = 5
-
-
-# def bt_irq(event, data):
-#     if event == _IRQ_SCAN_RESULT:
-#         addr_type, addr, connectable, rssi, adv_data = data
-#         address = binascii.hexlify(addr).decode()
-#         print(address, binascii.hexlify(adv_data))
-#         # devices[address] = rssi
 
 async def fan():
     while True:
