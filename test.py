@@ -12,7 +12,7 @@ FAN_MAC = '58:2b:db:00:2e:68'.lower()
 FAN_PIN = '09135336'
 FAN_MAX_RPM = 2400
 
-SENSOR_MAC = 'A4:C1:38:AA:AF:F3'.lower()
+SENSOR_MAC = binascii.unhexlify('A4:C1:38:AA:AF:F3')
 
 MQTT_STATE_TOPIC = 'homeassistant/sensor/picopower/state'
 MQTT_CONFIG_TOPIC = 'homeassistant/sensor/picopower/config'
@@ -157,7 +157,7 @@ async def sensor():
             async with aioble.scan(duration_ms=0, interval_us=30000, window_us=30000, active=True) as scanner:
                 async for result in scanner:
                     print(result, binascii.hexlify(result.device.addr, ':'), SENSOR_MAC)
-                    if binascii.hexlify(result.device.addr, ':') == SENSOR_MAC:
+                    if result.device.addr == SENSOR_MAC:
                         print("SENSOR", result, result.name(), result.rssi, list(result.services()))
 
             await asyncio.sleep(5)
