@@ -113,7 +113,7 @@ async def fan():
                 while True:
                     print(await(get_fan_state(fan_status_service_sensor_data_characteristic)))
                     print(await(get_fan_boost(fan_settings_service_boost_characteristic)))
-                    await async io.sleep(5)
+                    await asyncio.sleep(5)
 
         except Exception as ex:
             print("FANFAIL")
