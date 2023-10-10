@@ -7,6 +7,7 @@ import bluetooth
 import struct
 import math
 import time
+import json
 
 
 FAN_MAC = binascii.unhexlify('582bdb002e68')
@@ -42,6 +43,43 @@ CHARACTERISTIC_RESET = bluetooth.UUID("ff5f7c4f-2606-4c69-b360-15aaea58ad5f")
 CHARACTERISTIC_SENSITIVITY = bluetooth.UUID("e782e131-6ce1-4191-a8db-f4304d7610f1")
 CHARACTERISTIC_TEMP_HEAT_DISTRIBUTOR = bluetooth.UUID("a22eae12-dba8-49f3-9c69-1721dcff1d96")
 CHARACTERISTIC_TIME_FUNCTIONS = bluetooth.UUID("49c616de-02b1-4b67-b237-90f66793a6f2")
+
+
+SHOWERL_HASS_CONFIG = json.dumps({"device_class": "illuminance",
+                  "state_topic": "homeassistant/sensor/sensorShowerL/state",
+                  "unit_of_measurement": "lx",
+                  "unique_id": "light01ae",
+                  "device": {"identifiers": ["shower01ae"], "name": "Shower"}
+                 })
+                    
+SHOWERT_HASS_CONFIG = json.dumps({"device_class": "temperature",
+                  "state_topic": "homeassistant/sensor/sensorShowerT/state",
+                  "unit_of_measurement": "°C",
+                  "unique_id": "temp01ae",
+                  "device": {"identifiers": ["shower01ae"], "name": "Shower"}
+                 })
+
+SHOWERH_HASS_CONFIG = json.dumps({"device_class": "humidity",
+                  "state_topic": "homeassistant/sensor/sensorShowerH/state",
+                  "unit_of_measurement": "%",
+                  "unique_id": "hum01ae",
+                  "device": {"identifiers": ["shower01ae"], "name": "Shower"}
+                 })
+
+SHOWERB_HASS_CONFIG = json.dumps({"device_class": "battery",
+                  "state_topic": "homeassistant/sensor/sensorShowerB/state",
+                  "unit_of_measurement": "%",
+                  "unique_id": "bat01ae",
+                  "device": {"identifiers": ["shower01ae"], "name": "Shower"}
+                 })
+
+SHOWERFAN_HASS_CONFIG = json.dumps({"state_topic": "homeassistant/fan/fanShower/state",
+                    "command_topic": "homeassistant/fan/fanShower/command",
+                    "percentage_state_topic": "homeassistant/fan/fanShower/pcstate",
+                    "percentage_command_topic": "homeassistant/fan/fanShower/pccommand",
+                    "unique_id": "fan01ae",
+                    "device": {"identifiers": ["shower01ae"], "name": "Shower"}
+                    })
 
 
 sensor_humidity = None
@@ -218,12 +256,12 @@ async def sensor():
 
 
 def msg_callback(topic, msg, retained, qos):
-    pass
+    print(topic, msg)
 
 
-async def conn_callback(client):
-    pass
-    # await client.subscribe(TOPIC, 1)
+# async def conn_callback(client):
+#     pass
+#     # await client.subscribe(TOPIC, 1)
 
 
 async def mqtt():
@@ -231,17 +269,37 @@ async def mqtt():
     mqtt_async.config['wifi_pw'] = cfgsecrets.WIFI_PASSWORD
     mqtt_async.config['server'] = cfgsecrets.MQTT_HOST
     mqtt_async.config['subs_cb'] = msg_callback
-    mqtt_async.config['connect_coro'] = conn_callback
+    # mqtt_async.config['connect_coro'] = conn_callback
 
     mqc = mqtt_async.MQTTClient(mqtt_async.config)
     await mqc.connect()
+
+    await mqc.subscribe([('homeassistant/fan/fanShower/command', 0), ('homeassistant/fan/fanShower/pccommand', 0)])
+
     while True:
-        # FIXME: do stuff
-        print("HELLO")
-        # print('publish', n)
-        # await client.publish(TOPIC, 'Hello World #{}!'.format(n), qos=1)
+        # publish all the config jsons
+        await mqc.publish("homeassistant/sensor/sensorShowerH/config", SHOWERH_HASS_CONFIG)
+        await mqc.publish("homeassistant/sensor/sensorShowerT/config", SHOWERT_HASS_CONFIG)
+        await mqc.publish("homeassistant/sensor/sensorShowerB/config", SHOWERB_HASS_CONFIG)
+        await mqc.publish("homeassistant/sensor/sensorShowerL/config", SHOWERL_HASS_CONFIG)
+        await mqc.publish("homeassistant/fan/fanShower/config", SHOWERFAN_HASS_CONFIG)
+
+        # sensor data
+        if (time.ticks_ms() - sensor_last_seen) < 10000:
+            if sensor_humidity is not None:
+                await mqc.publish("homeassistant/sensor/sensorShowerH/state", round(sensor_humidity, 2))
+            if sensor_temperature is not None:
+                await mqc.publish("homeassistant/sensor/sensorShowerT/state", round(sensor_temperature, 2))
+            if sensor_battery is not None:
+                await mqc.publish("homeassistant/sensor/sensorShowerB/state", round(sensor_battery, 2))
+
+        # fan data
+        if (time.ticks_ms() - fan_last_seen) < 10000:
+            if fan_illuminance is not None:
+                await mqc.publish("homeassistant/sensor/sensorShowerL/state", round(fan_illuminance))
+            await mqc.publish("homeassistant/fan/fanShower/state", 'ON' if fan_desired_boost else 'OFF')
+
         await asyncio.sleep(5)
-    # await mqc.subscribe(topic, qos)
 
 
 async def main():
