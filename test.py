@@ -12,7 +12,7 @@ FAN_MAC = '58:2b:db:00:2e:68'.lower()
 FAN_PIN = '09135336'
 FAN_MAX_RPM = 2400
 
-SENSOR_MAC = binascii.unhexlify('A4:C1:38:AA:AF:F3')
+SENSOR_MAC = binascii.unhexlify('A4C138AAAFF3')
 
 MQTT_STATE_TOPIC = 'homeassistant/sensor/picopower/state'
 MQTT_CONFIG_TOPIC = 'homeassistant/sensor/picopower/config'
