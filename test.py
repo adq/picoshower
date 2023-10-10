@@ -6,6 +6,7 @@ import binascii
 import bluetooth
 import struct
 import math
+import time
 
 
 FAN_MAC = '58:2b:db:00:2e:68'.lower()
@@ -43,11 +44,18 @@ CHARACTERISTIC_TEMP_HEAT_DISTRIBUTOR = bluetooth.UUID("a22eae12-dba8-49f3-9c69-1
 CHARACTERISTIC_TIME_FUNCTIONS = bluetooth.UUID("49c616de-02b1-4b67-b237-90f66793a6f2")
 
 
-async def write_service_characteristic(bt_service, uuid: bluetooth.UUID, data: bytes):
-    bt_characteristic = await bt_service.characteristic(uuid)
-    await bt_characteristic.write(data)
+sensor_humidity = None
+sensor_temperature = None
+sensor_battery = None
+sensor_last_seen = 0
+fan_illuminance = None
+fan_desired_boost = False
+fan_last_seen = 0
 
-async def read_service_characteristic(bt_service, uuid: bluetooth.UUID, data: bytes):
+# FIXME: need to check things are alive somehow?
+
+
+async def write_service_characteristic(bt_service, uuid: bluetooth.UUID, data: bytes):
     bt_characteristic = await bt_service.characteristic(uuid)
     await bt_characteristic.write(data)
 
@@ -65,7 +73,7 @@ async def configure_fan(fan_details_service, fan_settings_service):
 
 
 async def get_fan_state(fan_status_service_sensor_data_characteristic):
-    v = struct.unpack('<4HBHB', await fan_status_service_sensor_data_characteristic.read())
+    v = tuple(struct.unpack('<4HBHB', await fan_status_service_sensor_data_characteristic.read()))
     humidity = round(math.log2(v[0])*10, 2) if v[0] > 0 else 0
     temp = v[1] / 4
     light = v[2]
@@ -86,8 +94,8 @@ async def get_fan_state(fan_status_service_sensor_data_characteristic):
     return humidity, temp, light, speed, trigger
 
 
-async def get_fan_boost(fan_settings_service_boot_characteristic):
-    on, rpm, secs = struct.unpack('<BHH', await fan_settings_service_boot_characteristic.read()) 
+async def get_fan_boost(fan_settings_service_boost_characteristic):
+    on, rpm, secs = tuple(struct.unpack('<BHH', await fan_settings_service_boost_characteristic.read()))
 
     speed = (rpm / FAN_MAX_RPM) * 100
     speed = round(min(speed, 100), 2)
@@ -95,7 +103,17 @@ async def get_fan_boost(fan_settings_service_boot_characteristic):
     return on, speed, secs
 
 
+async def set_fan_boost(fan_settings_service_boost_characteristic, on):
+    rpm = 2400 if on else 0 # NOTE: rpm needs to be a multiple of 25 apparently
+    on = 1 if on else 0
+    secs = 60 * 5 if on else 0
+
+    await fan_settings_service_boost_characteristic.write(struct.pack('<BHH', on, rpm, secs))
+
+
 async def fan():
+    global fan_illuminance, fan_desired_boost, fan_last_seen
+
     while True:
         try:
             device = aioble.Device(0, FAN_MAC)  # 0 => ADDR_PUBLIC
@@ -109,13 +127,18 @@ async def fan():
                 fan_settings_service = await connection.service(SERVICE_FAN_SETTINGS, timeout_ms=5000)
                 await configure_fan(fan_details_service, fan_settings_service)
 
-                # get essential characteristics and enter monitoring loop
+                # get essential characteristics and enter main fan monitoring loop
                 fan_status_service_sensor_data_characteristic = await fan_status_service.characteristic(CHARACTERISTIC_SENSOR_DATA, timeout_ms=5000)
                 fan_settings_service_boost_characteristic = await fan_settings_service.characteristic(CHARACTERISTIC_BOOST, timeout_ms=5000)
                 while True:
-                    print(await(get_fan_state(fan_status_service_sensor_data_characteristic)))
-                    print(await(get_fan_boost(fan_settings_service_boost_characteristic)))
-                    await asyncio.sleep(5)
+                    humidity, temp, light, speed, trigger = await(get_fan_state(fan_status_service_sensor_data_characteristic))
+                    boost_on, boost_speed, boost_secs = await(get_fan_boost(fan_settings_service_boost_characteristic))
+
+                    if fan_desired_boost != boost_on:
+                        await set_fan_boost(fan_settings_service_boost_characteristic, fan_desired_boost)
+
+                    fan_last_seen = time.ticks_ms()
+                    await asyncio.sleep(1)
 
         except Exception as ex:
             print("FANFAIL")
@@ -168,16 +191,23 @@ def extract_bthome_data(adv_data):
 
 
 async def sensor():
+    global sensor_temperature, sensor_humidity, sensor_battery, sensor_last_seen
+
     while True:
         try:
             async with aioble.scan(duration_ms=0, interval_us=30000, window_us=30000, active=True) as scanner:
                 async for result in scanner:
-                    print(result, binascii.hexlify(result.device.addr, ':'), SENSOR_MAC)
                     if result.device.addr == SENSOR_MAC:
-                        print("SENSOR", result, result.name(), result.rssi, result.adv_data, result.resp_data)
-                        print(extract_bthome_data(result.adv_data))
+                        temp, humidity, battery = extract_bthome_data(result.adv_data)
+                        if temp is not None:
+                            sensor_temperature = temp
+                        if humidity is not None:
+                            sensor_humidity = humidity
+                        if battery is not None:
+                            sensor_battery = battery
+                        sensor_last_seen = time.ticks_ms()
 
-            await asyncio.sleep(5)
+            await asyncio.sleep(1)
         except Exception as ex:
             print("SENSORFAIL")
             print(ex)
@@ -204,6 +234,7 @@ async def mqtt():
     mqc = mqtt_async.MQTTClient(mqtt_async.config)
     await mqc.connect()
     while True:
+        # FIXME: do stuff
         print("HELLO")
         # print('publish', n)
         # await client.publish(TOPIC, 'Hello World #{}!'.format(n), qos=1)
@@ -223,21 +254,8 @@ async def mqtt():
 #     #         print(adv)
 
 async def main():
-
-    # # Connect to WiFi
-    # print("Connecting to WIFI")
-    # rp2.country('GB')
-    # wlan = network.WLAN(network.STA_IF)
-    # wlan.active(True)
-    # wlan.connect(WIFI_SSID, WIFI_PASSWORD)
-    # while not wlan.isconnected():
-    #     print(wlan.status())
-    #     print('Waiting for connection...')
-    #     time.sleep(1)
-    # print("Connected to WiFi")
-
     await asyncio.gather(
-        # fan(),
+                         fan(),
                          sensor(),
                         #  mqtt()
                          )
