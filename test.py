@@ -156,6 +156,7 @@ async def sensor():
         try:
             async with aioble.scan(duration_ms=0, interval_us=30000, window_us=30000, active=True) as scanner:
                 async for result in scanner:
+                    print(result, binascii.hexlify(result.device.addr, ':'), SENSOR_MAC)
                     if binascii.hexlify(result.device.addr, ':') == SENSOR_MAC:
                         print("SENSOR", result, result.name(), result.rssi, list(result.services()))
 
