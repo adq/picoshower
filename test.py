@@ -159,7 +159,8 @@ async def sensor():
                     print(result, binascii.hexlify(result.device.addr, ':'), SENSOR_MAC)
                     if result.device.addr == SENSOR_MAC:
                         print("SENSOR", result, result.name(), result.rssi, result.adv_data, result.resp_data)
-                        print(decode_sensor_packet(result.adv_data))
+                        if result.adv_data is not None:
+                            print(decode_sensor_packet(result.adv_data))
 
             await asyncio.sleep(5)
         except Exception as ex:
