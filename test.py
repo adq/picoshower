@@ -158,6 +158,7 @@ async def sensor():
                 async for result in scanner:
                     print(result, binascii.hexlify(result.device.addr, ':'), SENSOR_MAC)
                     if result.device.addr == SENSOR_MAC:
+                        print(decode_sensor_packet(result.adv_data))
                         print("SENSOR", result, result.name(), result.rssi, result.adv_data, result.resp_data)
 
             await asyncio.sleep(5)
