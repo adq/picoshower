@@ -257,7 +257,7 @@ async def sensor():
             # await asyncio.sleep(5)
 
 
-def msg_callback(topic, msg, retained, qos):
+async def msg_callback(topic, msg, retained, qos):
     print(topic, msg)
 
 
