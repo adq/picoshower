@@ -2,19 +2,13 @@ import aioble
 import asyncio
 import cfgsecrets
 import mqtt_async
-import binascii
 import bluetooth
 import struct
 import math
 import time
 import json
 
-
-FAN_MAC = binascii.unhexlify('582bdb002e68')
-FAN_PIN = '09135336'
 FAN_MAX_RPM = 2400
-
-SENSOR_MAC = binascii.unhexlify('A4C138AAAFF3')
 
 SERVICE_FAN_DETAILS = bluetooth.UUID("e6834e4b-7b3a-48e6-91e4-f1d005f564d3")
 CHARACTERISTIC_PIN_CODE = bluetooth.UUID("4cad343a-209a-40b7-b911-4d9b3df569b2")
@@ -93,7 +87,7 @@ async def write_service_characteristic(bt_service, uuid: bluetooth.UUID, data: b
 
 
 async def configure_fan(fan_details_service, fan_settings_service):
-    await write_service_characteristic(fan_details_service, CHARACTERISTIC_PIN_CODE, struct.pack("<I", int(FAN_PIN)))
+    await write_service_characteristic(fan_details_service, CHARACTERISTIC_PIN_CODE, struct.pack("<I", int(cfgsecrets.FAN_PIN)))
 
     await write_service_characteristic(fan_settings_service, CHARACTERISTIC_LEVEL_OF_FAN_SPEED, struct.pack("<HHH", 2100, 1675, 1000))
     await write_service_characteristic(fan_settings_service, CHARACTERISTIC_SENSITIVITY, struct.pack("<4B", 1, 3, 1, 3))
@@ -148,7 +142,7 @@ async def fan():
 
     while True:
         try:
-            device = aioble.Device(0, FAN_MAC)  # 0 => ADDR_PUBLIC
+            device = aioble.Device(0, cfgsecrets.FAN_MAC)  # 0 => ADDR_PUBLIC
             connection = await device.connect(0)
             async with connection:
                 print("fan connected")
@@ -233,7 +227,7 @@ async def sensor():
         try:
             async with aioble.scan(duration_ms=0, interval_us=30000, window_us=30000, active=True) as scanner:
                 async for result in scanner:
-                    if result.device.addr == SENSOR_MAC:
+                    if result.device.addr == cfgsecrets.SENSOR_MAC:
                         temp, humidity, battery = extract_bthome_data(result.adv_data)
                         if temp is not None:
                             sensor_temperature = temp
