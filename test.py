@@ -258,7 +258,19 @@ async def sensor():
 
 
 def msg_callback(topic, msg, retained, qos, dup):
-    print(topic, msg)
+    global fan_desired_boost
+
+    if topic == b'homeassistant/fan/fanShower/command':
+        if msg == b'ON':
+            fan_desired_boost = True
+        else:
+            fan_desired_boost = False
+
+    elif topic == b'homeassistant/fan/fanShower/pccommand':
+        if msg != b'0':
+            fan_desired_boost = True
+        else:
+            fan_desired_boost = False
 
 
 async def conn_callback(client):
@@ -276,7 +288,6 @@ async def mqtt():
     mqc = mqtt_async.MQTTClient(mqtt_async.config)
     await mqc.connect()
     print("MQTT connected")
-
 
     while True:
         # publish all the config jsons
