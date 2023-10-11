@@ -16,10 +16,6 @@ FAN_MAX_RPM = 2400
 
 SENSOR_MAC = binascii.unhexlify('A4C138AAAFF3')
 
-MQTT_STATE_TOPIC = 'homeassistant/sensor/picopower/state'
-MQTT_CONFIG_TOPIC = 'homeassistant/sensor/picopower/config'
-MQTT_CLIENT_ID = 'picoshower'
-
 SERVICE_FAN_DETAILS = bluetooth.UUID("e6834e4b-7b3a-48e6-91e4-f1d005f564d3")
 CHARACTERISTIC_PIN_CODE = bluetooth.UUID("4cad343a-209a-40b7-b911-4d9b3df569b2")
 CHARACTERISTIC_PIN_CONFIRMATION = bluetooth.UUID("d1ae6b70-ee12-4f6d-b166-d2063dcaffe1")
@@ -297,7 +293,7 @@ async def mqtt():
         await mqc.publish("homeassistant/sensor/sensorShowerL/config", SHOWERL_HASS_CONFIG)
         await mqc.publish("homeassistant/fan/fanShower/config", SHOWERFAN_HASS_CONFIG)
 
-        # sensor data
+        # publish sensor data
         if (time.ticks_ms() - sensor_last_seen) < 10000:
             if sensor_humidity is not None:
                 await mqc.publish("homeassistant/sensor/sensorShowerH/state", str(round(sensor_humidity, 2)))
@@ -306,7 +302,7 @@ async def mqtt():
             if sensor_battery is not None:
                 await mqc.publish("homeassistant/sensor/sensorShowerB/state", str(round(sensor_battery, 2)))
 
-        # fan data
+        # publish fan data
         if (time.ticks_ms() - fan_last_seen) < 10000:
             if fan_illuminance is not None:
                 await mqc.publish("homeassistant/sensor/sensorShowerL/state", str(round(fan_illuminance)))
