@@ -174,8 +174,8 @@ async def fan():
             print("FANFAIL")
             print(type(ex))
             print(ex)
-            raise
-            # await asyncio.sleep(5)
+            # raise
+            await asyncio.sleep(5)
 
 
 def decode_bthome_data(pkt):
@@ -243,8 +243,8 @@ async def sensor():
         except Exception as ex:
             print("SENSORFAIL")
             print(ex)
-            raise
-            # await asyncio.sleep(5)
+            # raise
+            await asyncio.sleep(5)
 
 
 def msg_callback(topic, msg, retained, qos, dup):
