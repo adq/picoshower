@@ -471,7 +471,8 @@ class MQTTProto:
                 if is_awaitable(cb):
                     await cb  # handle _subs_cb being coro
             except Exception as e:
-                log.exc(e, "exception in handler")
+                raise
+                # log.exc(e, "exception in handler")
             # t2 = ticks_ms()
             # Send PUBACK for QoS 1 messages
             if qos == 1:
