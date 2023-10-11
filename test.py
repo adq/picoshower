@@ -257,13 +257,13 @@ async def sensor():
             # await asyncio.sleep(5)
 
 
-async def msg_callback(topic, msg, retained, qos):
+def msg_callback(topic, msg, retained, qos):
     print(topic, msg)
 
 
-# async def conn_callback(client):
-#     pass
-#     # await client.subscribe(TOPIC, 1)
+async def conn_callback(client):
+    await client.subscribe('homeassistant/fan/fanShower/command', 0)
+    await client.subscribe('homeassistant/fan/fanShower/pccommand', 0)
 
 
 async def mqtt():
@@ -271,14 +271,12 @@ async def mqtt():
     mqtt_async.config['wifi_pw'] = cfgsecrets.WIFI_PASSWORD
     mqtt_async.config['server'] = cfgsecrets.MQTT_HOST
     mqtt_async.config['subs_cb'] = msg_callback
-    # mqtt_async.config['connect_coro'] = conn_callback
+    mqtt_async.config['connect_coro'] = conn_callback
 
     mqc = mqtt_async.MQTTClient(mqtt_async.config)
     await mqc.connect()
     print("MQTT connected")
 
-    await mqc.subscribe('homeassistant/fan/fanShower/command', 0)
-    await mqc.subscribe('homeassistant/fan/fanShower/pccommand', 0)
 
     while True:
         # publish all the config jsons
