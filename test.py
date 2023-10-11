@@ -172,6 +172,8 @@ async def fan():
 
                     print("fan data", humidity, temp, light, speed, trigger, boost_on, boost_speed, boost_secs, fan_desired_boost)
 
+                    if light is not None:
+                        fan_illuminance = light
                     if fan_desired_boost != boost_on:
                         await set_fan_boost(fan_settings_service_boost_characteristic, fan_desired_boost)
 
