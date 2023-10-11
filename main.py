@@ -275,34 +275,42 @@ async def mqtt():
     mqtt_async.config['subs_cb'] = msg_callback
     mqtt_async.config['connect_coro'] = conn_callback
 
-    mqc = mqtt_async.MQTTClient(mqtt_async.config)
-    await mqc.connect()
-    print("MQTT connected")
-
     while True:
-        # publish all the config jsons
-        await mqc.publish("homeassistant/sensor/sensorShowerH/config", SHOWERH_HASS_CONFIG)
-        await mqc.publish("homeassistant/sensor/sensorShowerT/config", SHOWERT_HASS_CONFIG)
-        await mqc.publish("homeassistant/sensor/sensorShowerB/config", SHOWERB_HASS_CONFIG)
-        await mqc.publish("homeassistant/sensor/sensorShowerL/config", SHOWERL_HASS_CONFIG)
-        await mqc.publish("homeassistant/fan/fanShower/config", SHOWERFAN_HASS_CONFIG)
+        try:
+            mqc = mqtt_async.MQTTClient(mqtt_async.config)
+            await mqc.connect()
+            print("MQTT connected")
 
-        # publish sensor data
-        if (time.ticks_ms() - sensor_last_seen) < 10000:
-            if sensor_humidity is not None:
-                await mqc.publish("homeassistant/sensor/sensorShowerH/state", str(round(sensor_humidity, 2)))
-            if sensor_temperature is not None:
-                await mqc.publish("homeassistant/sensor/sensorShowerT/state", str(round(sensor_temperature, 2)))
-            if sensor_battery is not None:
-                await mqc.publish("homeassistant/sensor/sensorShowerB/state", str(round(sensor_battery, 2)))
+            while True:
+                # publish all the config jsons
+                await mqc.publish("homeassistant/sensor/sensorShowerH/config", SHOWERH_HASS_CONFIG)
+                await mqc.publish("homeassistant/sensor/sensorShowerT/config", SHOWERT_HASS_CONFIG)
+                await mqc.publish("homeassistant/sensor/sensorShowerB/config", SHOWERB_HASS_CONFIG)
+                await mqc.publish("homeassistant/sensor/sensorShowerL/config", SHOWERL_HASS_CONFIG)
+                await mqc.publish("homeassistant/fan/fanShower/config", SHOWERFAN_HASS_CONFIG)
 
-        # publish fan data
-        if (time.ticks_ms() - fan_last_seen) < 10000:
-            if fan_illuminance is not None:
-                await mqc.publish("homeassistant/sensor/sensorShowerL/state", str(round(fan_illuminance)))
-            await mqc.publish("homeassistant/fan/fanShower/state", 'ON' if fan_desired_boost else 'OFF')
+                # publish sensor data
+                if (time.ticks_ms() - sensor_last_seen) < 10000:
+                    if sensor_humidity is not None:
+                        await mqc.publish("homeassistant/sensor/sensorShowerH/state", str(round(sensor_humidity, 2)))
+                    if sensor_temperature is not None:
+                        await mqc.publish("homeassistant/sensor/sensorShowerT/state", str(round(sensor_temperature, 2)))
+                    if sensor_battery is not None:
+                        await mqc.publish("homeassistant/sensor/sensorShowerB/state", str(round(sensor_battery, 2)))
 
-        await asyncio.sleep(5)
+                # publish fan data
+                if (time.ticks_ms() - fan_last_seen) < 10000:
+                    if fan_illuminance is not None:
+                        await mqc.publish("homeassistant/sensor/sensorShowerL/state", str(round(fan_illuminance)))
+                    await mqc.publish("homeassistant/fan/fanShower/state", 'ON' if fan_desired_boost else 'OFF')
+
+                await asyncio.sleep(5)
+
+        except Exception as ex:
+            print("MQTTFAIL")
+            print(ex)
+            # raise
+            await asyncio.sleep(5)
 
 
 async def main():
