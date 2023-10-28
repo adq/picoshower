@@ -41,7 +41,7 @@ SHOWERL_HASS_CONFIG = json.dumps({"device_class": "illuminance",
                   "unique_id": "light01ae",
                   "device": {"identifiers": ["shower01ae"], "name": "Shower"}
                  })
-                    
+
 SHOWERT_HASS_CONFIG = json.dumps({"device_class": "temperature",
                   "state_topic": "homeassistant/sensor/sensorShowerT/state",
                   "unit_of_measurement": "°C",
@@ -65,8 +65,6 @@ SHOWERB_HASS_CONFIG = json.dumps({"device_class": "battery",
 
 SHOWERFAN_HASS_CONFIG = json.dumps({"state_topic": "homeassistant/fan/fanShower/state",
                     "command_topic": "homeassistant/fan/fanShower/command",
-                    "percentage_state_topic": "homeassistant/fan/fanShower/pcstate",
-                    "percentage_command_topic": "homeassistant/fan/fanShower/pccommand",
                     "unique_id": "fan01ae",
                     "device": {"identifiers": ["shower01ae"], "name": "Shower"}
                     })
@@ -207,16 +205,16 @@ def decode_bthome_data(pkt):
 def extract_bthome_data(adv_data):
     if adv_data is None:
         return None, None, None
-    
-    i = 0 
+
+    i = 0
     while i < len(adv_data):
         length = adv_data[i+0]
 
         if adv_data[i+1] == 0x16 and adv_data[i+2] == 0x1c and adv_data[i+3] == 0x18:
             return decode_bthome_data(adv_data[i+4:i+length+1])
 
-        i += length + 1  
-    
+        i += length + 1
+
     return None, None, None
 
 
@@ -256,16 +254,9 @@ def msg_callback(topic, msg, retained, qos, dup):
         else:
             fan_desired_boost = False
 
-    elif topic == b'homeassistant/fan/fanShower/pccommand':
-        if msg != b'0':
-            fan_desired_boost = True
-        else:
-            fan_desired_boost = False
-
 
 async def conn_callback(client):
     await client.subscribe('homeassistant/fan/fanShower/command', 0)
-    await client.subscribe('homeassistant/fan/fanShower/pccommand', 0)
 
 
 async def mqtt():
